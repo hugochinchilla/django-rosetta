@@ -6,10 +6,18 @@ from django.template import Node
 from django.utils.encoding import smart_str, smart_unicode
 
 register = template.Library()
-rx = re.compile(r'(%(\([^\s\)]*\))?[sd])')
+rxs = [
+    re.compile(r'(?<!<code>)(%\w+%)'),
+    re.compile(r'(?<!<code>)(%(?:\d+\$)?(?:\d+\.)?(?:\d+)?[sdf])'),
+    # next is the last to not overlap with %abcd% patterns
+    re.compile(r'(?<!<code>)(%(\([^\s\)]*\))?[sdf])'),
+]
 
 def format_message(message):
-    return mark_safe(rx.sub('<code>\\1</code>', escape(message).replace(r'\n','<br />\n')))
+    escaped_message = escape(message).replace(r'\n','<br />\n')
+    for rx in rxs:
+        escaped_message = rx.sub('<code>\\1</code>', escaped_message)
+    return mark_safe(escaped_message)
 format_message=register.filter(format_message)
 
 
